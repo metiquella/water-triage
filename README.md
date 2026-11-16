@@ -210,3 +210,19 @@ cd dashboard
 npm install
 npm run dev
 ```
+
+### Ports
+
+| Service | Port | Notes |
+|---|---|---|
+| Backend (FastAPI) | `8000` | Fixed by the `--port 8000` flag above |
+| Vite dev server | `5173` | Proxies `/api` to `http://127.0.0.1:8000` |
+| Dashboard (Docker) | `3000` | Nginx serves the built bundle and proxies `/api` to `backend:8000` |
+| PostgreSQL | `5432` | Bound to `127.0.0.1` only |
+
+If your backend runs on a different host or port, point the dev proxy at it
+without editing the config:
+
+```bash
+VITE_API_BASE=http://127.0.0.1:9000 npm run dev
+```

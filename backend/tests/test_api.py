@@ -1,3 +1,6 @@
+from conftest import drop_test_sample as _drop_sample
+
+
 def test_priority_ranked_descending(client):
     res = client.get("/api/priority")
     assert res.status_code == 200
@@ -79,3 +82,40 @@ def test_dashboard_data_endpoint(client):
         assert first_pid in data["details"]
         assert "readings" in data["details"][first_pid]
 
+
+
+def test_unscored_sample_detail_returns_200(db, client):
+    """A sample with no risk_scores row must not 404.
+
+    risk_score is optional in SampleDetailOut, and the endpoint uses an
+    outer join, so the unscored case must still return the sample.
+    """
+    from datetime import datetime, timezone
+
+    from app.models import District, Village, WaterSample
+
+    district = db.query(District).filter(District.name == "Unnao").one()
+    village = Village(district_id=district.id, name="Unscored Detail Hab")
+    db.add(village)
+    db.flush()
+    ws = WaterSample(
+        village_id=village.id,
+        source_type="handpump",
+        collected_on=datetime(2022, 6, 1, tzinfo=timezone.utc),
+        wqmis_ref="TEST-UNSCORED-DETAIL",
+    )
+    db.add(ws)
+    db.commit()
+    try:
+        res = client.get(f"/api/samples/{ws.id}")
+        assert res.status_code == 200
+        body = res.json()
+        assert body["id"] == ws.id
+        assert body["risk_score"] is None
+    finally:
+        _drop_sample(db, ws.id)
+
+
+def test_missing_sample_detail_returns_404(client):
+    res = client.get("/api/samples/999999")
+    assert res.status_code == 404

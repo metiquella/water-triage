@@ -79,3 +79,24 @@ def test_dashboard_data_endpoint(client):
         assert first_pid in data["details"]
         assert "readings" in data["details"][first_pid]
 
+
+
+def test_priority_top_zero_rejected(client):
+    res = client.get("/api/priority/top/0")
+    assert res.status_code == 422
+
+
+def test_priority_top_negative_rejected(client):
+    res = client.get("/api/priority/top/-5")
+    assert res.status_code == 422
+
+
+def test_priority_top_upper_bound(client):
+    res = client.get("/api/priority/top/100000")
+    assert res.status_code == 422
+
+
+def test_priority_top_respects_n(client):
+    res = client.get("/api/priority/top/3")
+    assert res.status_code == 200
+    assert len(res.json()) == 3

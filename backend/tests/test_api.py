@@ -79,3 +79,16 @@ def test_dashboard_data_endpoint(client):
         assert first_pid in data["details"]
         assert "readings" in data["details"][first_pid]
 
+
+
+def test_district_detail_takes_id_not_name(client):
+    """The route is /districts/{int}, so a name is a validation error.
+
+    Refs #41/#36, which reported that names with spaces or mixed case fail.
+    """
+    by_name = client.get("/api/districts/Hardoi")
+    assert by_name.status_code == 422
+
+    by_id = client.get("/api/districts/1")
+    assert by_id.status_code == 200
+    assert by_id.json()["name"] == "Unnao"
